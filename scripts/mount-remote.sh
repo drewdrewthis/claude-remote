@@ -25,13 +25,19 @@ fi
 # Create mount point if needed
 mkdir -p "$LOCAL_MOUNT"
 
-# Mount with good options for stability
+# Mount with aggressive caching for better performance
 sshfs "$REMOTE_HOST:$REMOTE_DIR" "$LOCAL_MOUNT" \
     -o reconnect \
     -o ServerAliveInterval=15 \
     -o ServerAliveCountMax=3 \
     -o defer_permissions \
-    -o volname=claude-remote
+    -o volname=claude-remote \
+    -o cache=yes \
+    -o cache_timeout=600 \
+    -o attr_timeout=600 \
+    -o entry_timeout=600 \
+    -o max_readahead=131072 \
+    -o Compression=no
 
 if [ $? -eq 0 ]; then
     echo "✓ Mounted $REMOTE_HOST:$REMOTE_DIR at $LOCAL_MOUNT"
