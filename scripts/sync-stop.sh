@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Launch Claude Code with remote execution and filesystem
+# Stop Mutagen sync session
 #
 
 # Resolve symlinks to find the real script directory
@@ -16,9 +16,10 @@ source "$SCRIPT_DIR/../config.sh" 2>/dev/null || {
     exit 1
 }
 
-# Ensure mutagen sync is running
-"$SCRIPT_DIR/sync-start.sh"
-
-# Launch Claude with remote shell
-cd "$LOCAL_MOUNT"
-SHELL="$SCRIPT_DIR/zsh" exec claude "$@"
+if mutagen sync list 2>/dev/null | grep -q "claude-remote"; then
+    echo "Stopping sync session..."
+    mutagen sync terminate --label-selector=name=claude-remote
+    echo "✓ Sync session stopped"
+else
+    echo "○ No sync session running"
+fi

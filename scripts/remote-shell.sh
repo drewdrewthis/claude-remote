@@ -46,10 +46,15 @@ if [[ -n "$cmd" ]]; then
         pwd_suffix="${BASH_REMATCH[2]}"
     fi
 
-    # Run the actual command remotely with interactive shell (-i) to load full profile
-    # Filter out harmless TTY warnings from bash -i, preserve exit code with PIPESTATUS
-    /usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "cd $REMOTE_DIR && /bin/bash -i -c $(printf '%q' "$cmd")" 2>&1 | grep -v "^bash: cannot set terminal process group\|^bash: no job control\|^manpath:"
-    exit_code=${PIPESTATUS[0]}
+    # Flush mutagen sync before running command (ensure remote has latest files)
+    mutagen sync flush --label-selector=name=claude-remote >/dev/null 2>&1
+
+    # Run the actual command remotely, sourcing nvm for PATH
+    /usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "source ~/.nvm/nvm.sh 2>/dev/null; cd $REMOTE_DIR && /bin/bash -c $(printf '%q' "$cmd")"
+    exit_code=$?
+
+    # Flush mutagen sync after command (pull any changes back)
+    mutagen sync flush --label-selector=name=claude-remote >/dev/null 2>&1
 
     # Run the pwd redirect locally if it was present
     if [[ -n "$pwd_suffix" ]]; then
