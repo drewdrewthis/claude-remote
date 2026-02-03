@@ -45,8 +45,8 @@ notify() {
         last_notify=$(tail -1 "$STATE_FILE")
     fi
 
-    # Only notify if state changed or cooldown expired
-    if [[ "$state" != "$last_state" ]] || [[ $((now - last_notify)) -ge $NOTIFY_COOLDOWN ]]; then
+    # Only notify if state changed, or still offline after cooldown
+    if [[ "$state" != "$last_state" ]] || { [[ "$state" == "offline" ]] && [[ $((now - last_notify)) -ge $NOTIFY_COOLDOWN ]]; }; then
         osascript -e "display notification \"$message\" with title \"Claude Remote\"" 2>/dev/null
         echo -e "$state\n$now" > "$STATE_FILE"
     fi
@@ -100,7 +100,7 @@ if [[ -n "$cmd" ]]; then
 
         # Build remote command
         MARKER="__CLAUDE_REMOTE_PWD__"
-        remote_cmd="source ~/.nvm/nvm.sh 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
+        remote_cmd="source ~/.profile 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
 
         # Run and capture output
         remote_output=$(/usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "$remote_cmd")
