@@ -99,8 +99,9 @@ if [[ -n "$cmd" ]]; then
         mutagen sync flush --label-selector=name=claude-remote >/dev/null 2>&1
 
         # Build remote command
+        # Source .profile and .bashrc (with non-interactive guard disabled)
         MARKER="__CLAUDE_REMOTE_PWD__"
-        remote_cmd="source ~/.profile 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
+        remote_cmd="source ~/.profile 2>/dev/null; source <(sed 's/return;;/;;/' ~/.bashrc) 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
 
         # Run and capture output
         remote_output=$(/usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "$remote_cmd")
