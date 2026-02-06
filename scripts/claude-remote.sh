@@ -20,6 +20,10 @@ source "$SCRIPT_DIR/../config.sh" 2>/dev/null || {
 # Ensure mutagen sync is running
 "$SCRIPT_DIR/sync-start.sh"
 
+# Check remote shell connection
+echo "Remote shell connection:"
+remote-shell "uname -a"
+
 # Default path or use first argument
 if [[ -n "$1" && -d "$1" ]]; then
     WORK_PATH="$1"
