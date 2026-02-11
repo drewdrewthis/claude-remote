@@ -36,9 +36,9 @@ LOCAL_MOUNT="$LOCAL_MOUNT"
 EOF
 
     echo
-    echo "✓ Configuration saved to config.sh"
+    echo "Configuration saved to config.sh"
 else
-    echo "✓ config.sh already exists"
+    echo "config.sh already exists"
     source "$SCRIPT_DIR/config.sh"
 fi
 
@@ -50,20 +50,26 @@ chmod +x "$SCRIPT_DIR/scripts/"*.sh
 # Create bin directory if needed
 mkdir -p "$BIN_DIR"
 
-# Create symlinks
-echo "Creating symlinks in $BIN_DIR..."
-
-COMMANDS=(claude-remote mount-remote unmount-remote sync-start sync-status sync-stop ssh-tmux ssh-wait remote-status)
-for cmd in "${COMMANDS[@]}"; do
-    ln -sf "$SCRIPT_DIR/scripts/${cmd}.sh" "$BIN_DIR/$cmd"
-    echo "  $cmd -> scripts/${cmd}.sh"
+# Remove old symlinks from previous versions
+OLD_CMDS=(mount-remote unmount-remote sync-start sync-status sync-stop ssh-tmux ssh-wait remote-status)
+for cmd in "${OLD_CMDS[@]}"; do
+    link="$BIN_DIR/$cmd"
+    if [[ -L "$link" ]] && [[ "$(readlink "$link")" == *"claude-remote/scripts/"* ]]; then
+        rm "$link"
+        echo "  Removed old symlink: $cmd"
+    fi
 done
+
+# Create the single symlink
+echo "Creating symlink in $BIN_DIR..."
+ln -sf "$SCRIPT_DIR/scripts/claude-remote.sh" "$BIN_DIR/claude-remote"
+echo "  claude-remote -> scripts/claude-remote.sh"
 
 echo
 
 # Check if ~/bin is in PATH
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-    echo "⚠ Warning: $BIN_DIR is not in your PATH"
+    echo "Warning: $BIN_DIR is not in your PATH"
     echo "  Add this to your ~/.zshrc or ~/.bashrc:"
     echo "  export PATH=\"\$HOME/bin:\$PATH\""
     echo
@@ -72,18 +78,16 @@ fi
 # Check dependencies
 echo "Checking dependencies..."
 
-if ! command -v sshfs &> /dev/null; then
-    echo "⚠ sshfs not found. Install with:"
-    echo "  brew install --cask fuse-t"
-    echo "  brew install macos-fuse-t/cask/fuse-t-sshfs"
+if ! command -v mutagen &> /dev/null; then
+    echo "  mutagen not found. Install with: brew install mutagen-io/mutagen/mutagen"
 else
-    echo "✓ sshfs installed"
+    echo "  mutagen installed"
 fi
 
 if ! command -v claude &> /dev/null; then
-    echo "⚠ claude not found. Install Claude Code first."
+    echo "  claude not found. Install Claude Code first."
 else
-    echo "✓ claude installed"
+    echo "  claude installed"
 fi
 
 echo
@@ -91,23 +95,22 @@ echo
 # Test SSH connection
 echo "Testing SSH connection to $REMOTE_HOST..."
 if ssh -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_HOST" "echo ok" &> /dev/null; then
-    echo "✓ SSH connection works"
+    echo "  SSH connection works"
 else
-    echo "⚠ SSH connection failed. Make sure:"
-    echo "  1. The host is reachable"
-    echo "  2. SSH keys are set up (ssh-copy-id $REMOTE_HOST)"
+    echo "  SSH connection failed. Make sure:"
+    echo "    1. The host is reachable"
+    echo "    2. SSH keys are set up (ssh-copy-id $REMOTE_HOST)"
 fi
 
 echo
 echo "Setup complete!"
 echo
 echo "Usage:"
-echo "  claude-remote          # Launch Claude with remote execution"
-echo "  mount-remote           # Mount remote filesystem only"
-echo "  unmount-remote         # Unmount remote filesystem"
-echo "  sync-start [path]      # Start Mutagen sync for a project"
-echo "  sync-status            # Show Mutagen sync status"
-echo "  sync-stop              # Stop Mutagen sync"
-echo "  ssh-tmux               # SSH into remote with tmux"
-echo "  ssh-wait               # Wait for remote, then connect"
-echo "  remote-status          # Diagnostic status check"
+echo "  claude-remote [path]        Launch Claude with remote execution"
+echo "  claude-remote status        Diagnostic status check"
+echo "  claude-remote sync [path]   Start Mutagen sync"
+echo "  claude-remote sync stop     Stop sync"
+echo "  claude-remote sync status   Show sync state"
+echo "  claude-remote shell         Interactive tmux session picker"
+echo "  claude-remote shell [name]  Attach/create named tmux session"
+echo "  claude-remote help          Show help"
