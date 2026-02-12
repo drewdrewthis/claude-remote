@@ -52,18 +52,17 @@ notify() {
     fi
 }
 
-# Check if remote is reachable (fast check with hard timeout)
+# Check if remote is reachable (fast check via SSH ConnectTimeout)
 is_remote_available() {
     # First check if control socket exists but is stale
     local socket="/tmp/ssh-claude-${REMOTE_HOST}:22"
     if [[ -S "$socket" ]]; then
         # Test if socket is alive, remove if stale
-        if ! timeout 1 /usr/bin/ssh -o ControlPath="$socket" -O check "$REMOTE_HOST" 2>/dev/null; then
+        if ! /usr/bin/ssh -o ControlPath="$socket" -o ConnectTimeout=1 -O check "$REMOTE_HOST" 2>/dev/null; then
             /bin/rm -f "$socket" 2>/dev/null
         fi
     fi
-    # Plain SSH check without ControlMaster (ControlMaster=auto can hang when creating socket)
-    timeout 5 /usr/bin/ssh -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_HOST" "exit 0" 2>/dev/null
+    /usr/bin/ssh -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_HOST" "exit 0" 2>/dev/null
 }
 
 # Parse flags - Claude Code sends: -c -l "command"
