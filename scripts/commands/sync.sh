@@ -95,6 +95,11 @@ _sync_start() {
     done
     echo ""
     echo "Sync ready"
+
+    # Heal git worktree paths on both sides
+    if type cmd_heal &>/dev/null; then
+        cmd_heal both 2>/dev/null
+    fi
 }
 
 _sync_stop() {

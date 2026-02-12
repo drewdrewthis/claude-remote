@@ -36,6 +36,7 @@ source "$CMD_DIR/launch.sh"
 source "$CMD_DIR/status.sh"
 source "$CMD_DIR/sync.sh"
 source "$CMD_DIR/shell.sh"
+source "$CMD_DIR/heal.sh"
 
 _show_help() {
     echo "claude-remote — run Claude Code on a remote machine"
@@ -48,6 +49,7 @@ _show_help() {
     echo "  claude-remote sync status       Show sync state"
     echo "  claude-remote shell             Interactive tmux session picker"
     echo "  claude-remote shell [name]      Attach/create named tmux session"
+    echo "  claude-remote heal [local|remote|both]  Fix git worktree paths"
     echo "  claude-remote help              Show this help"
 }
 
@@ -56,6 +58,7 @@ case "${1:-}" in
     status)          shift; cmd_status "$@" ;;
     sync)            shift; cmd_sync "$@" ;;
     shell)           shift; cmd_shell "$@" ;;
+    heal)            shift; cmd_heal "$@" ;;
     help|-h|--help)  _show_help ;;
     *)               cmd_launch "$@" ;;
 esac
