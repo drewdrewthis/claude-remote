@@ -81,8 +81,19 @@ _sync_start() {
         fi
     fi
 
-    echo "Waiting for sync..."
-    mutagen sync flush --label-selector=name=claude-remote
+    echo "Waiting for sync... Ctrl-C to cancel"
+    local attempts=0
+    local max_attempts=60  # 5 minutes at 5s intervals
+    while ! mutagen sync flush --label-selector=name=claude-remote 2>/dev/null; do
+        ((attempts++))
+        if [[ $attempts -ge $max_attempts ]]; then
+            echo "Sync timed out after ${max_attempts} attempts" >&2
+            return 1
+        fi
+        printf "."
+        sleep 5
+    done
+    echo ""
     echo "Sync ready"
 }
 
