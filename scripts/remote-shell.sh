@@ -101,7 +101,9 @@ if [[ -n "$cmd" ]]; then
         # Build remote command
         # Source .profile and .bashrc (with non-interactive guard disabled)
         MARKER="__CLAUDE_REMOTE_PWD__"
-        remote_cmd="source ~/.profile 2>/dev/null; source <(sed 's/return;;/;;/' ~/.bashrc) 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
+        # Heal worktree .git file on remote if needed (sync may have overwritten with local paths)
+        HEAL_CMD="[[ -f '$REMOTE_CWD/.git' ]] && grep -q '$LOCAL_MOUNT' '$REMOTE_CWD/.git' 2>/dev/null && sed -i 's|$LOCAL_MOUNT|$REMOTE_DIR|g' '$REMOTE_CWD/.git';"
+        remote_cmd="source ~/.profile 2>/dev/null; source <(sed 's/return;;/;;/' ~/.bashrc) 2>/dev/null; $HEAL_CMD cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
 
         # Run and capture output
         remote_output=$(/usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "$remote_cmd")
@@ -109,6 +111,11 @@ if [[ -n "$cmd" ]]; then
 
         # Flush mutagen sync after command
         mutagen sync flush --label-selector=name=claude-remote >/dev/null 2>&1
+
+        # Heal git worktree paths in cwd (sync may have overwritten .git file)
+        if [[ -f "$LOCAL_CWD/.git" ]] && grep -q "$REMOTE_DIR" "$LOCAL_CWD/.git" 2>/dev/null; then
+            sed -i '' "s|$REMOTE_DIR|$LOCAL_MOUNT|g" "$LOCAL_CWD/.git"
+        fi
 
         # Split output and handle pwd
         if [[ "$remote_output" == *"$MARKER"* ]]; then
