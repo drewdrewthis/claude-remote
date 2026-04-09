@@ -19,8 +19,8 @@ Run Claude Code locally with the UI on your machine, but execute all commands on
 │         │                                          │                │
 │         ▼                                          │                │
 │  ┌──────────────┐    ┌──────────────┐              │                │
-│  │ ~/Projects/  │◀──▶│   Mutagen    │◀─────────────┼────────┐      │
-│  │   remote/    │    │ (bidirectional sync)        │        │      │
+│  │ Any local    │◀──▶│   Mutagen    │◀─────────────┼────────┐      │
+│  │  directory   │    │ (bidirectional sync)        │        │      │
 │  └──────────────┘    └──────────────┘              │        │      │
 └────────────────────────────────────────────────────┼────────┼──────┘
                                                      │        │
@@ -28,7 +28,7 @@ Run Claude Code locally with the UI on your machine, but execute all commands on
 ┌────────────────────────────────────────────────────────────────────┐
 │                      Remote Server (EC2)                           │
 │  ┌──────────────┐    ┌──────────────────────────────────────┐     │
-│  │   SSH        │    │  /home/ubuntu/Projects/               │     │
+│  │   SSH        │    │  REMOTE_MIRROR_ROOT/<abs-path>/       │     │
 │  │   Server     │───▶│  (your actual files & execution)     │     │
 │  └──────────────┘    └──────────────────────────────────────┘     │
 └────────────────────────────────────────────────────────────────────┘
@@ -109,11 +109,8 @@ ssh-copy-id ubuntu@your-server.com
 ## Usage
 
 ```bash
-# Launch Claude with remote execution (uses DEFAULT_PROJECT from config)
+# Launch Claude with remote execution (syncs current directory)
 claude-remote
-
-# Or specify a path
-claude-remote ~/Projects/remote/my-project
 ```
 
 Once running, all Claude commands execute on the remote server:
@@ -133,7 +130,6 @@ Linux ip-10-0-3-248 6.14.0-1018-aws ... aarch64 GNU/Linux
 sync-start       # Start Mutagen sync (auto-started by claude-remote)
 sync-stop        # Stop Mutagen sync
 sync-status      # Check sync status
-ssh-tmux         # SSH into remote with persistent tmux session
 ```
 
 ## Configuration
@@ -141,17 +137,8 @@ ssh-tmux         # SSH into remote with persistent tmux session
 Edit `config.sh` (created by setup.sh):
 
 ```bash
-# SSH connection to remote machine
 REMOTE_HOST="ubuntu@your-ec2-instance.amazonaws.com"
-
-# Directory on remote machine where commands will execute
-REMOTE_DIR="/home/ubuntu/Projects"
-
-# Local directory to sync with remote
-LOCAL_MOUNT="$HOME/Projects/remote"
-
-# Default project directory (optional, defaults to LOCAL_MOUNT)
-DEFAULT_PROJECT="$LOCAL_MOUNT/my-project"
+REMOTE_MIRROR_ROOT="/home/ubuntu/claude-remote-mirror"
 ```
 
 ### Sync ignore patterns
