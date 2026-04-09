@@ -86,8 +86,8 @@ if [[ -z "$TARGET" || ! -d "$TARGET" ]]; then
     exit 1
 fi
 
-# Session name: sanitize absolute path into a valid mutagen name
-SESSION_NAME="claude-remote-$(echo "$TARGET" | tr '/' '-' | sed 's/^-//')"
+# Session name: sanitize absolute path into a valid mutagen name (alphanumeric + hyphens only)
+SESSION_NAME="claude-remote-$(echo "$TARGET" | tr -c '[:alnum:]-' '-' | sed 's/^-//;s/-$//')"
 
 # Remote path: mirror the full local absolute path under REMOTE_MIRROR_ROOT
 REMOTE_PATH="${REMOTE_MIRROR_ROOT}${TARGET}"

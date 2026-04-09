@@ -130,7 +130,6 @@ Linux ip-10-0-3-248 6.14.0-1018-aws ... aarch64 GNU/Linux
 sync-start       # Start Mutagen sync (auto-started by claude-remote)
 sync-stop        # Stop Mutagen sync
 sync-status      # Check sync status
-ssh-tmux         # SSH into remote with persistent tmux session
 ```
 
 ## Configuration
@@ -139,8 +138,7 @@ Edit `config.sh` (created by setup.sh):
 
 ```bash
 REMOTE_HOST="ubuntu@your-ec2-instance.amazonaws.com"
-REMOTE_DIR="/home/ubuntu/Projects"
-REMOTE_MIRROR_ROOT="/home/ubuntu/mirror"
+REMOTE_MIRROR_ROOT="/home/ubuntu/claude-remote-mirror"
 ```
 
 ### Sync ignore patterns
