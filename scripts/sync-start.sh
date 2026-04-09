@@ -18,6 +18,11 @@ source "$SCRIPT_DIR/../config.sh" 2>/dev/null || {
     exit 1
 }
 
+if [[ -z "$REMOTE_MIRROR_ROOT" ]]; then
+    echo "Error: REMOTE_MIRROR_ROOT not set in config.sh" >&2
+    exit 1
+fi
+
 # Ensure daemon is running
 mutagen daemon start 2>/dev/null
 

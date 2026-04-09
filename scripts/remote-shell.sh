@@ -18,6 +18,11 @@ source "$SCRIPT_DIR/../config.sh" 2>/dev/null || {
     exit 1
 }
 
+if [[ -z "$REMOTE_MIRROR_ROOT" ]]; then
+    echo "Error: REMOTE_MIRROR_ROOT not set in config.sh" >&2
+    exit 1
+fi
+
 SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-claude-%r@%h:%p -o ControlPersist=600 -o ConnectTimeout=5"
 STATE_FILE="/tmp/claude-remote-state"
 NOTIFY_COOLDOWN=300  # 5 minutes
@@ -95,10 +100,19 @@ if [[ -n "$cmd" ]]; then
         # Flush mutagen sync before command
         mutagen sync flush --label-selector=name=claude-remote >/dev/null 2>&1
 
+        # Fix worktree .git file if present (sync copies local absolute path; rewrite to remote mirror path)
+        /usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "
+            if [ -f '$REMOTE_CWD/.git' ] && grep -q 'gitdir:' '$REMOTE_CWD/.git'; then
+                if ! grep -q 'gitdir: ${REMOTE_MIRROR_ROOT}' '$REMOTE_CWD/.git'; then
+                    sed -i 's|gitdir: /|gitdir: ${REMOTE_MIRROR_ROOT}/|' '$REMOTE_CWD/.git'
+                fi
+            fi
+        " 2>/dev/null || true
+
         # Build remote command
         # Source .profile and .bashrc (with non-interactive guard disabled)
         MARKER="__CLAUDE_REMOTE_PWD__"
-        remote_cmd="source ~/.profile 2>/dev/null; source <(sed 's/return;;/;;/' ~/.bashrc) 2>/dev/null; cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
+        remote_cmd="source ~/.profile 2>/dev/null; source <(sed 's/return;;/;;/' ~/.bashrc) 2>/dev/null; cd '$REMOTE_CWD'; /bin/bash -c $(printf '%q' "$cmd"); echo $MARKER; pwd -P"
 
         # Run and capture output
         remote_output=$(/usr/bin/ssh $SSH_OPTS "$REMOTE_HOST" "$remote_cmd")
@@ -148,7 +162,7 @@ else
     if is_remote_available; then
         notify "Remote instance available" "online"
         REMOTE_CWD="$(local_to_remote "$(pwd -P)")"
-        /usr/bin/ssh $SSH_OPTS -t "$REMOTE_HOST" "cd '$REMOTE_CWD' 2>/dev/null || cd '$REMOTE_DIR'; /bin/bash -l"
+        /usr/bin/ssh $SSH_OPTS -t "$REMOTE_HOST" "cd '$REMOTE_CWD'; /bin/bash -l"
     else
         notify "Remote unavailable - using local shell" "offline"
         /bin/bash -l
